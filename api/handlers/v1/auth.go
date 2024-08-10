@@ -2,6 +2,7 @@ package v1
 
 import (
 	"api_gateway/api/handlers/models"
+	pb "api_gateway/genproto/users"
 	"api_gateway/pkg/helper"
 	"api_gateway/pkg/jwt"
 	"encoding/json"
@@ -27,7 +28,7 @@ import (
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
 func (h *HandlerV1) Register(ctx *gin.Context) {
-	var req models.RequestRegister
+	var req pb.CreateUser
 
 	err := json.NewDecoder(ctx.Request.Body).Decode(&req)
 	if err != nil {
@@ -49,7 +50,7 @@ func (h *HandlerV1) Register(ctx *gin.Context) {
 	}
 	req.Password = string(hashedPassword)
 
-	resp, err := h.services.UsersService().Auth().Register(ctx, &req)
+	resp, err := h.services.UsersService().Create(ctx, &req)
 	if err != nil {
 		handleResponse(ctx, h.log, "Error with register User", http.StatusInternalServerError, err.Error())
 		return
