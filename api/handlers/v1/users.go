@@ -5,7 +5,9 @@ import (
 	pb "api_gateway/genproto/users"
 	"api_gateway/pkg/logger"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +15,7 @@ import (
 // GetUserProfile  	godoc
 // @Router 			/users/profile [get]
 // @Summary 		Get User Profile
-// @Description 	getting user profile by user id
+// @Description 	getting user profile
 // @Accept 			json
 // @Produce 		json
 // @Success 		200  {object}  models.Response
@@ -28,9 +30,87 @@ func (h *HandlerV1) GetUserProfile(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := h.services.UsersService().GetUserProfile(ctx, &pb.PrimaryKey{Id: user.Id})
+	resp, err := h.services.UsersService().GetById(ctx, &pb.PrimaryKey{Id: user.Id})
 	if err != nil {
-		handleResponse(ctx, h.log, "error while using GetUserProfile method of users service", http.StatusInternalServerError, logger.Error(err))
+		handleResponse(ctx, h.log, "error while using GetById method of users service", http.StatusInternalServerError, logger.Error(err))
+		return
+	}
+
+	handleResponse(ctx, h.log, "", http.StatusOK, resp)
+}
+
+// GetUserProfile  	godoc
+// @Router 			/users/{user_id} [get]
+// @Summary 		Get User Profile by id
+// @Description 	getting user profile by user id
+// @Accept 			json
+// @Produce 		json
+// @Param			user_id path string true "user_id"
+// @Success 		200  {object}  models.Response
+// @Failure 		400  {object}  models.Response
+// @Failure 		500  {object}  models.Response
+// @Failure 		401  {object}  models.Response
+func (h *HandlerV1) GetUserById(ctx *gin.Context) {
+
+	userId := ctx.Param("user_id")
+	if userId == "" {
+		handleResponse(ctx, h.log, "error: id not found in request param", http.StatusBadRequest, logger.Error(fmt.Errorf("id not found in request param")))
+		return
+	}
+
+	resp, err := h.services.UsersService().GetById(ctx, &pb.PrimaryKey{Id: userId})
+	if err != nil {
+		handleResponse(ctx, h.log, "error while using GetById method of users service", http.StatusInternalServerError, logger.Error(err))
+		return
+	}
+
+	handleResponse(ctx, h.log, "", http.StatusOK, resp)
+}
+
+// GetUserProfile  	godoc
+// @Router 			/users/all [get]
+// @Summary 		Get All User
+// @Description 	getting all user
+// @Accept 			json
+// @Produce 		json
+// @Param			page 		query int 	true 	"page"
+// @Param			limit 		query int 	true 	"limit"
+// @Param			full_name 	query string false 	"full_name"
+// @Param			email 		query string false 	"email"
+// @Param			user_role 	query string false 	"user_role"
+// @Success 		200  {object}  models.Response
+// @Failure 		400  {object}  models.Response
+// @Failure 		500  {object}  models.Response
+// @Failure 		401  {object}  models.Response
+func (h *HandlerV1) GetAllUsers(ctx *gin.Context) {
+
+	pageStr := ctx.DefaultQuery("page", "1")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		handleResponse(ctx, h.log, "error while converting page", http.StatusBadRequest, err.Error())
+		return
+	}
+
+	limitStr := ctx.DefaultQuery("limit", "10")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		handleResponse(ctx, h.log, "error while converting limit", http.StatusBadRequest, err.Error())
+		return
+	}
+
+	fullname := ctx.Query("full_name")
+	email := ctx.Query("email")
+	userRole := ctx.Query("user_role")
+
+	resp, err := h.services.UsersService().GetAll(ctx, &pb.GetListRequest{
+		Page:     int32(page),
+		Limit:    int64(limit),
+		FullName: fullname,
+		Email:    email,
+		UserRole: userRole,
+	})
+	if err != nil {
+		handleResponse(ctx, h.log, "error while using GetAll method of users service", http.StatusInternalServerError, logger.Error(err))
 		return
 	}
 
@@ -62,13 +142,14 @@ func (h *HandlerV1) UpdateUserProfile(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := h.services.UsersService().UpdateUserProfile(ctx, &pb.UpdateUser{
-		Id:             user.Id,
-		FullName:       req.FullName,
-		NativeLanguage: req.NativeLanguage,
+	resp, err := h.services.UsersService().Update(ctx, &pb.UpdateUser{
+		Id:           user.Id,
+		FullName:     req.FullName,
+		Email:        req.Email,
+		PasswordHash: req.Password,
 	})
 	if err != nil {
-		handleResponse(ctx, h.log, "error while using UpdateUserProfile method of users service", http.StatusInternalServerError, err.Error())
+		handleResponse(ctx, h.log, "error while using Update method of users service", http.StatusInternalServerError, err.Error())
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	v1 "api_gateway/api/handlers/v1"
 	"api_gateway/grpc/client"
 	"api_gateway/pkg/logger"
+	"api_gateway/storage"
 
 	"github.com/gin-gonic/gin"
 	swaggerFile "github.com/swaggo/files"
@@ -18,8 +19,8 @@ import (
 // @contact.url http://www.support_me_with_smile
 
 // @BasePath /
-func NewRouter(log logger.ILogger, services client.IServiceManager) *gin.Engine {
-	handlerV1 := v1.NewHandlerV1(services, log)
+func NewRouter(log logger.ILogger, services client.IServiceManager, storage storage.IStorage) *gin.Engine {
+	handlerV1 := v1.NewHandlerV1(services, storage, log)
 
 	r := gin.Default()
 
@@ -37,6 +38,9 @@ func NewRouter(log logger.ILogger, services client.IServiceManager) *gin.Engine 
 	users := r.Group("/users")
 	{
 		users.GET("/profile", handlerV1.GetUserProfile)
+		users.GET("/:user_id", handlerV1.GetUserById)
+		users.GET("/all", handlerV1.GetAllUsers)
+
 		users.PUT("/update", handlerV1.UpdateUserProfile)
 		users.PUT("/password", handlerV1.ChangePassword)
 	}

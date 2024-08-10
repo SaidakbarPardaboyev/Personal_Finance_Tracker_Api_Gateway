@@ -1,9 +1,5 @@
 package models
 
-import (
-	"time"
-)
-
 type RequestRegister struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -18,7 +14,7 @@ type ResponseRegister struct {
 }
 
 type RequestLogin struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -34,18 +30,18 @@ type Tokens struct {
 
 type UserForLogin struct {
 	Id        string `json:"id"`
-	Username  string `json:"username"`
+	FullName  string `json:"full_name"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
-	FullName  string `json:"full_name"`
+	UserRole  string `json:"user_role"`
 	CreatedAt string `json:"created_at"`
 }
 
-type StoreRefreshToken struct {
-	UserId       string    `json:"user_id"`
-	RefreshToken string    `json:"refresh_token"`
-	ExpiresIn    time.Time `json:"expires_in"`
-}
+// type StoreRefreshToken struct {
+// 	UserId       string    `json:"user_id"`
+// 	RefreshToken string    `json:"refresh_token"`
+// 	ExpiresIn    time.Time `json:"expires_in"`
+// }
 
 type UpdatePassword struct {
 	Password string `json:"password"`

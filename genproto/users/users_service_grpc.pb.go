@@ -22,7 +22,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UsersServiceClient interface {
-	Create(ctx context.Context, in *CreateUser, opts ...grpc.CallOption) (*User, error)
+	GetById(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*User, error)
+	GetAll(ctx context.Context, in *GetListRequest, opts ...grpc.CallOption) (*Users, error)
+	Update(ctx context.Context, in *UpdateUser, opts ...grpc.CallOption) (*UpdatedUser, error)
+	Delete(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Void, error)
+	ChangePassword(ctx context.Context, in *ChangePassword, opts ...grpc.CallOption) (*Void, error)
+	ChangeUserRole(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Void, error)
 }
 
 type usersServiceClient struct {
@@ -33,9 +38,54 @@ func NewUsersServiceClient(cc grpc.ClientConnInterface) UsersServiceClient {
 	return &usersServiceClient{cc}
 }
 
-func (c *usersServiceClient) Create(ctx context.Context, in *CreateUser, opts ...grpc.CallOption) (*User, error) {
+func (c *usersServiceClient) GetById(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*User, error) {
 	out := new(User)
-	err := c.cc.Invoke(ctx, "/users.UsersService/Create", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/users.UsersService/GetById", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) GetAll(ctx context.Context, in *GetListRequest, opts ...grpc.CallOption) (*Users, error) {
+	out := new(Users)
+	err := c.cc.Invoke(ctx, "/users.UsersService/GetAll", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) Update(ctx context.Context, in *UpdateUser, opts ...grpc.CallOption) (*UpdatedUser, error) {
+	out := new(UpdatedUser)
+	err := c.cc.Invoke(ctx, "/users.UsersService/Update", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) Delete(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/users.UsersService/Delete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) ChangePassword(ctx context.Context, in *ChangePassword, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/users.UsersService/ChangePassword", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) ChangeUserRole(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/users.UsersService/ChangeUserRole", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +96,12 @@ func (c *usersServiceClient) Create(ctx context.Context, in *CreateUser, opts ..
 // All implementations must embed UnimplementedUsersServiceServer
 // for forward compatibility
 type UsersServiceServer interface {
-	Create(context.Context, *CreateUser) (*User, error)
+	GetById(context.Context, *PrimaryKey) (*User, error)
+	GetAll(context.Context, *GetListRequest) (*Users, error)
+	Update(context.Context, *UpdateUser) (*UpdatedUser, error)
+	Delete(context.Context, *PrimaryKey) (*Void, error)
+	ChangePassword(context.Context, *ChangePassword) (*Void, error)
+	ChangeUserRole(context.Context, *PrimaryKey) (*Void, error)
 	mustEmbedUnimplementedUsersServiceServer()
 }
 
@@ -54,8 +109,23 @@ type UsersServiceServer interface {
 type UnimplementedUsersServiceServer struct {
 }
 
-func (UnimplementedUsersServiceServer) Create(context.Context, *CreateUser) (*User, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+func (UnimplementedUsersServiceServer) GetById(context.Context, *PrimaryKey) (*User, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetById not implemented")
+}
+func (UnimplementedUsersServiceServer) GetAll(context.Context, *GetListRequest) (*Users, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
+}
+func (UnimplementedUsersServiceServer) Update(context.Context, *UpdateUser) (*UpdatedUser, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedUsersServiceServer) Delete(context.Context, *PrimaryKey) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedUsersServiceServer) ChangePassword(context.Context, *ChangePassword) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedUsersServiceServer) ChangeUserRole(context.Context, *PrimaryKey) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeUserRole not implemented")
 }
 func (UnimplementedUsersServiceServer) mustEmbedUnimplementedUsersServiceServer() {}
 
@@ -70,20 +140,110 @@ func RegisterUsersServiceServer(s grpc.ServiceRegistrar, srv UsersServiceServer)
 	s.RegisterService(&UsersService_ServiceDesc, srv)
 }
 
-func _UsersService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateUser)
+func _UsersService_GetById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrimaryKey)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServiceServer).Create(ctx, in)
+		return srv.(UsersServiceServer).GetById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/users.UsersService/Create",
+		FullMethod: "/users.UsersService/GetById",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServiceServer).Create(ctx, req.(*CreateUser))
+		return srv.(UsersServiceServer).GetById(ctx, req.(*PrimaryKey))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).GetAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/users.UsersService/GetAll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).GetAll(ctx, req.(*GetListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUser)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/users.UsersService/Update",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).Update(ctx, req.(*UpdateUser))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrimaryKey)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/users.UsersService/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).Delete(ctx, req.(*PrimaryKey))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangePassword)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).ChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/users.UsersService/ChangePassword",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).ChangePassword(ctx, req.(*ChangePassword))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_ChangeUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrimaryKey)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).ChangeUserRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/users.UsersService/ChangeUserRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).ChangeUserRole(ctx, req.(*PrimaryKey))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -96,8 +256,28 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*UsersServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Create",
-			Handler:    _UsersService_Create_Handler,
+			MethodName: "GetById",
+			Handler:    _UsersService_GetById_Handler,
+		},
+		{
+			MethodName: "GetAll",
+			Handler:    _UsersService_GetAll_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _UsersService_Update_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _UsersService_Delete_Handler,
+		},
+		{
+			MethodName: "ChangePassword",
+			Handler:    _UsersService_ChangePassword_Handler,
+		},
+		{
+			MethodName: "ChangeUserRole",
+			Handler:    _UsersService_ChangeUserRole_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

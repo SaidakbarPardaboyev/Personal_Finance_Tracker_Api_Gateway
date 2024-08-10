@@ -2,6 +2,8 @@ package jwt
 
 import (
 	"api_gateway/api/handlers/models"
+	pb "api_gateway/genproto/users"
+
 	"api_gateway/configs"
 	"fmt"
 	"net/smtp"
@@ -10,15 +12,15 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func GenarateJWTToken(user *models.UserForLogin) (*models.Tokens, error) {
+func GenarateJWTToken(user *pb.User) (*models.Tokens, error) {
 	accesToken := jwt.New(jwt.SigningMethodHS256)
 	refreshToken := jwt.New(jwt.SigningMethodHS256)
 
 	claimsAccess := accesToken.Claims.(jwt.MapClaims)
 	claimsAccess["user_id"] = user.Id
-	claimsAccess["username"] = user.Username
 	claimsAccess["email"] = user.Email
 	claimsAccess["full_name"] = user.FullName
+	claimsAccess["user_role"] = user.UserRole
 	claimsAccess["iat"] = time.Now().Unix()
 	claimsAccess["exp"] = time.Now().Add(time.Hour).Unix()
 
@@ -28,10 +30,10 @@ func GenarateJWTToken(user *models.UserForLogin) (*models.Tokens, error) {
 	}
 
 	claimsRefresh := refreshToken.Claims.(jwt.MapClaims)
-	claimsRefresh["user_id"] = user.Id
-	claimsRefresh["username"] = user.Username
-	claimsRefresh["email"] = user.Email
-	claimsRefresh["full_name"] = user.FullName
+	claimsAccess["user_id"] = user.Id
+	claimsAccess["email"] = user.Email
+	claimsAccess["full_name"] = user.FullName
+	claimsAccess["user_role"] = user.UserRole
 	claimsRefresh["iat"] = time.Now().Unix()
 	claimsRefresh["exp"] = time.Now().Add(time.Hour * 24).Unix()
 

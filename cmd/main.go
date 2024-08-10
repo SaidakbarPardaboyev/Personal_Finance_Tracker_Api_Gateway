@@ -5,6 +5,9 @@ import (
 	"api_gateway/configs"
 	"api_gateway/grpc/client"
 	"api_gateway/pkg/logger"
+	"api_gateway/storage"
+	"api_gateway/storage/redis"
+	"context"
 
 	"go.uber.org/zap"
 )
@@ -20,7 +23,15 @@ func main() {
 		return
 	}
 
-	router := api.NewRouter(logger, services)
+	redisClient, err := redis.NewRedisClient()
+	if err != nil {
+		logger.Fatal("Failed while creating redis client ", zap.Error(err))
+		return
+	}
+
+	storage, err := storage.New(context.Background(), config, &logger)
+
+	router := api.NewRouter(logger, services, storage)
 
 	logger.Info("Gin router is running..")
 	err = router.Run(config.ApiGatewayHttpHost + config.ApiGatewayHttpPort)

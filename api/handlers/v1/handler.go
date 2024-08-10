@@ -5,6 +5,7 @@ import (
 	"api_gateway/api/handlers/tokens"
 	"api_gateway/grpc/client"
 	"api_gateway/pkg/logger"
+	"api_gateway/storage"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -12,12 +13,14 @@ import (
 )
 
 type HandlerV1 struct {
+	storage  storage.IStorage
 	services client.IServiceManager
 	log      logger.ILogger
 }
 
-func NewHandlerV1(services client.IServiceManager, logger logger.ILogger) *HandlerV1 {
+func NewHandlerV1(services client.IServiceManager, storage storage.IStorage, logger logger.ILogger) *HandlerV1 {
 	return &HandlerV1{
+		storage:  storage,
 		services: services,
 		log:      logger,
 	}

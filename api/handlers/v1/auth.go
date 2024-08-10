@@ -79,7 +79,7 @@ func (h *HandlerV1) Login(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.storage.Auth().GetUserByUsername(ctx, req.Username)
+	user, err := h.services.UsersService().GetByEmail(ctx, &pb.Email{Email: req.Email})
 	if err != nil {
 		handleResponse(ctx, h.log, "error getting email from database", http.StatusBadRequest, err.Error())
 		return
@@ -97,16 +97,16 @@ func (h *HandlerV1) Login(ctx *gin.Context) {
 		return
 	}
 
-	err = h.storage.Auth().DeleteRefreshTokenByUserId(ctx, user.Id)
+	_, err = h.services.UsersService().DeleteRefreshTokenByUserId(ctx, &pb.PrimaryKey{Id: user.Id})
 	if err != nil {
 		handleResponse(ctx, h.log, "Error with deleting userinfo from refreshToken table", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	err = h.storage.Auth().StoreRefreshToken(ctx, &models.StoreRefreshToken{
+	_, err = h.services.UsersService().StoreRefreshToken(ctx, &pb.RefreshToken{
 		UserId:       user.Id,
 		RefreshToken: tokens.RefreshToken,
-		ExpiresIn:    time.Now().Add(time.Hour * 24),
+		ExpiresIn:    time.Now().Add(time.Hour * 24).String(),
 	})
 	if err != nil {
 		handleResponse(ctx, h.log, "Error with storing refresh token to refreshToken table", http.StatusInternalServerError, err.Error())
@@ -128,7 +128,7 @@ func (h *HandlerV1) Login(ctx *gin.Context) {
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
 func (h *HandlerV1) RefreshToken(ctx *gin.Context) {
-	req := models.RequestRefreshToken{}
+	req := pb.RequestRefreshToken{}
 
 	err := json.NewDecoder(ctx.Request.Body).Decode(&req)
 	if err != nil {
@@ -136,7 +136,7 @@ func (h *HandlerV1) RefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	err = h.storage.Auth().CheckRefreshTokenExists(ctx, req.RefreshToken)
+	_, err = h.services.UsersService().CheckRefreshTokenExists(ctx, &req)
 	if err != nil {
 		handleResponse(ctx, h.log, "Invalid refresh token", http.StatusBadRequest, err.Error())
 		return
@@ -165,7 +165,7 @@ func (h *HandlerV1) RefreshToken(ctx *gin.Context) {
 func (h *HandlerV1) ForgotPassword(ctx *gin.Context) {
 
 	var (
-		request *models.ForgotPasswordReq
+		request = pb.Email{}
 		code    string
 		err     error
 	)
@@ -176,7 +176,7 @@ func (h *HandlerV1) ForgotPassword(ctx *gin.Context) {
 	}
 
 	// check email is exists
-	if err = h.storage.Auth().CheckEmailExists(ctx, request.Email); err != nil {
+	if _, err = h.services.UsersService().CheckEmailExists(ctx, &request); err != nil {
 		handleResponse(ctx, h.log, "Error with checking email is exists", http.StatusBadRequest, err.Error())
 		return
 	}
@@ -256,8 +256,10 @@ func (h *HandlerV1) ResetPassword(ctx *gin.Context) {
 	}
 	request.NewPassword = string(hashedPassword)
 
-	err = h.storage.Auth().ResetPassword(ctx, request.NewPassword, email)
-	if err != nil {
+	if _, err = h.services.UsersService().ResetPassword(ctx, &pb.ResetPassword{
+		NewPassword: request.NewPassword,
+		Email:       email,
+	}); err != nil {
 		handleResponse(ctx, h.log, "error while saving new password in service layer", http.StatusInternalServerError, err.Error())
 		return
 	}
