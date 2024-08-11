@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"auth_service/pkg/logger"
+	"api_gateway/pkg/logger"
 	"context"
 	"time"
 

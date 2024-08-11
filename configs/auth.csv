@@ -1,0 +1,9 @@
+p, admin, /*, GET
+p, admin, /*, POST
+p, admin, /*, PUT
+p, admin, /*, DELETE
+
+p, user, /auth/*, *
+p, user, /users/profile, GET
+p, user, /users/update, PUT
+p, user, /users/password, PUT

@@ -12,17 +12,23 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+type Option struct {
+	Log      logger.ILogger
+	Services client.IServiceManager
+	Storage  storage.IStorage
+}
+
 type HandlerV1 struct {
 	storage  storage.IStorage
 	services client.IServiceManager
 	log      logger.ILogger
 }
 
-func NewHandlerV1(services client.IServiceManager, storage storage.IStorage, logger logger.ILogger) *HandlerV1 {
+func NewHandlerV1(option *Option) *HandlerV1 {
 	return &HandlerV1{
-		storage:  storage,
-		services: services,
-		log:      logger,
+		storage:  option.Storage,
+		services: option.Services,
+		log:      option.Log,
 	}
 }
 
@@ -62,22 +68,20 @@ func getUserInfoFromToken(ctx *gin.Context) (*models.UserInfoFromToken, error) {
 		err    error
 	)
 
-	token = ctx.GetHeader("Authorization")
-	if token == "" {
-		return nil, fmt.Errorf("authorization is requeired")
+	token, err = ctx.Cookie("access_token")
+	if err != nil {
+		return nil, fmt.Errorf("error while getting access toke from cookie: %s", err.Error())
 	}
-	fmt.Println(token)
 
 	claims, err = tokens.ExtractClaims(token)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(claims)
 
 	resp.Id = claims["user_id"].(string)
-	resp.Username = claims["username"].(string)
 	resp.Email = claims["email"].(string)
 	resp.FullName = claims["full_name"].(string)
+	resp.UserRole = claims["user_role"].(string)
 
 	return &resp, nil
 }

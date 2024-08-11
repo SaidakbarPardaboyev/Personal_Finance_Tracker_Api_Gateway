@@ -27,7 +27,7 @@ type UsersServiceClient interface {
 	Update(ctx context.Context, in *UpdateUser, opts ...grpc.CallOption) (*UpdatedUser, error)
 	Delete(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Void, error)
 	ChangePassword(ctx context.Context, in *ChangePassword, opts ...grpc.CallOption) (*Void, error)
-	ChangeUserRole(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Void, error)
+	ChangeUserRole(ctx context.Context, in *ChangeUserRole, opts ...grpc.CallOption) (*Void, error)
 }
 
 type usersServiceClient struct {
@@ -83,7 +83,7 @@ func (c *usersServiceClient) ChangePassword(ctx context.Context, in *ChangePassw
 	return out, nil
 }
 
-func (c *usersServiceClient) ChangeUserRole(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Void, error) {
+func (c *usersServiceClient) ChangeUserRole(ctx context.Context, in *ChangeUserRole, opts ...grpc.CallOption) (*Void, error) {
 	out := new(Void)
 	err := c.cc.Invoke(ctx, "/users.UsersService/ChangeUserRole", in, out, opts...)
 	if err != nil {
@@ -101,7 +101,7 @@ type UsersServiceServer interface {
 	Update(context.Context, *UpdateUser) (*UpdatedUser, error)
 	Delete(context.Context, *PrimaryKey) (*Void, error)
 	ChangePassword(context.Context, *ChangePassword) (*Void, error)
-	ChangeUserRole(context.Context, *PrimaryKey) (*Void, error)
+	ChangeUserRole(context.Context, *ChangeUserRole) (*Void, error)
 	mustEmbedUnimplementedUsersServiceServer()
 }
 
@@ -124,7 +124,7 @@ func (UnimplementedUsersServiceServer) Delete(context.Context, *PrimaryKey) (*Vo
 func (UnimplementedUsersServiceServer) ChangePassword(context.Context, *ChangePassword) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangePassword not implemented")
 }
-func (UnimplementedUsersServiceServer) ChangeUserRole(context.Context, *PrimaryKey) (*Void, error) {
+func (UnimplementedUsersServiceServer) ChangeUserRole(context.Context, *ChangeUserRole) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangeUserRole not implemented")
 }
 func (UnimplementedUsersServiceServer) mustEmbedUnimplementedUsersServiceServer() {}
@@ -231,7 +231,7 @@ func _UsersService_ChangePassword_Handler(srv interface{}, ctx context.Context, 
 }
 
 func _UsersService_ChangeUserRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PrimaryKey)
+	in := new(ChangeUserRole)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func _UsersService_ChangeUserRole_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/users.UsersService/ChangeUserRole",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServiceServer).ChangeUserRole(ctx, req.(*PrimaryKey))
+		return srv.(UsersServiceServer).ChangeUserRole(ctx, req.(*ChangeUserRole))
 	}
 	return interceptor(ctx, in, info, handler)
 }

@@ -6,9 +6,9 @@ import (
 	"api_gateway/grpc/client"
 	"api_gateway/pkg/logger"
 	"api_gateway/storage"
-	"api_gateway/storage/redis"
 	"context"
 
+	"github.com/casbin/casbin/v2"
 	"go.uber.org/zap"
 )
 
@@ -23,15 +23,24 @@ func main() {
 		return
 	}
 
-	redisClient, err := redis.NewRedisClient()
+	storage, err := storage.New(context.Background(), config, &logger)
 	if err != nil {
-		logger.Fatal("Failed while creating redis client ", zap.Error(err))
+		logger.Fatal("Failed to connect storage ", zap.Error(err))
 		return
 	}
 
-	storage, err := storage.New(context.Background(), config, &logger)
+	casbinEnforcer, err := casbin.NewEnforcer("./configs/auth.conf", "./configs/auth.csv")
+	if err != nil {
+		logger.Fatal("Failed to create casbin enforcer ", zap.Error(err))
+		return
+	}
 
-	router := api.NewRouter(logger, services, storage)
+	router := api.NewRouter(&api.Option{
+		Log:            logger,
+		Services:       services,
+		Storage:        storage,
+		CasbinEnforcer: casbinEnforcer,
+	})
 
 	logger.Info("Gin router is running..")
 	err = router.Run(config.ApiGatewayHttpHost + config.ApiGatewayHttpPort)

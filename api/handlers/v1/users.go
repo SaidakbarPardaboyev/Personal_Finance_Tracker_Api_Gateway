@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // GetUserProfile  	godoc
@@ -22,6 +23,7 @@ import (
 // @Failure 		400  {object}  models.Response
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
+// @Security		ApiKeyAuth
 func (h *HandlerV1) GetUserProfile(ctx *gin.Context) {
 
 	user, err := getUserInfoFromToken(ctx)
@@ -39,7 +41,7 @@ func (h *HandlerV1) GetUserProfile(ctx *gin.Context) {
 	handleResponse(ctx, h.log, "", http.StatusOK, resp)
 }
 
-// GetUserProfile  	godoc
+// GetUserById  	godoc
 // @Router 			/users/{user_id} [get]
 // @Summary 		Get User Profile by id
 // @Description 	getting user profile by user id
@@ -50,6 +52,7 @@ func (h *HandlerV1) GetUserProfile(ctx *gin.Context) {
 // @Failure 		400  {object}  models.Response
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
+// @Security		ApiKeyAuth
 func (h *HandlerV1) GetUserById(ctx *gin.Context) {
 
 	userId := ctx.Param("user_id")
@@ -67,7 +70,7 @@ func (h *HandlerV1) GetUserById(ctx *gin.Context) {
 	handleResponse(ctx, h.log, "", http.StatusOK, resp)
 }
 
-// GetUserProfile  	godoc
+// GetAllUsers  	godoc
 // @Router 			/users/all [get]
 // @Summary 		Get All User
 // @Description 	getting all user
@@ -82,6 +85,7 @@ func (h *HandlerV1) GetUserById(ctx *gin.Context) {
 // @Failure 		400  {object}  models.Response
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
+// @Security		ApiKeyAuth
 func (h *HandlerV1) GetAllUsers(ctx *gin.Context) {
 
 	pageStr := ctx.DefaultQuery("page", "1")
@@ -128,6 +132,7 @@ func (h *HandlerV1) GetAllUsers(ctx *gin.Context) {
 // @Failure 		400  {object}  models.Response
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
+// @Security		ApiKeyAuth
 func (h *HandlerV1) UpdateUserProfile(ctx *gin.Context) {
 
 	user, err := getUserInfoFromToken(ctx)
@@ -141,6 +146,13 @@ func (h *HandlerV1) UpdateUserProfile(ctx *gin.Context) {
 		handleResponse(ctx, h.log, "error while getting request body", http.StatusBadRequest, err.Error())
 		return
 	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		handleResponse(ctx, h.log, "Error with hashing password", http.StatusInternalServerError, err.Error())
+		return
+	}
+	req.Password = string(hashedPassword)
 
 	resp, err := h.services.UsersService().Update(ctx, &pb.UpdateUser{
 		Id:           user.Id,
@@ -156,6 +168,35 @@ func (h *HandlerV1) UpdateUserProfile(ctx *gin.Context) {
 	handleResponse(ctx, h.log, "", http.StatusOK, resp)
 }
 
+// DeleteUser  	godoc
+// @Router 			/users/{user_id} [delete]
+// @Summary 		Delete User
+// @Description 	deleting user by user id
+// @Accept 			json
+// @Produce 		json
+// @Param			user_id path string true "user_id"
+// @Success 		200  {object}  models.Response
+// @Failure 		400  {object}  models.Response
+// @Failure 		500  {object}  models.Response
+// @Failure 		401  {object}  models.Response
+// @Security		ApiKeyAuth
+func (h *HandlerV1) DeleteUser(ctx *gin.Context) {
+
+	userId := ctx.Param("user_id")
+	if userId == "" {
+		handleResponse(ctx, h.log, "error: id not found in request param", http.StatusBadRequest, logger.Error(fmt.Errorf("id not found in request param")))
+		return
+	}
+
+	_, err := h.services.UsersService().Delete(ctx, &pb.PrimaryKey{Id: userId})
+	if err != nil {
+		handleResponse(ctx, h.log, "error while using Delete method of users service", http.StatusInternalServerError, logger.Error(err))
+		return
+	}
+
+	handleResponse(ctx, h.log, "Success", http.StatusOK, "user was deleted successfully")
+}
+
 // ChangePassword  	godoc
 // @Router 			/users/password [put]
 // @Summary 		Change User Password
@@ -167,6 +208,7 @@ func (h *HandlerV1) UpdateUserProfile(ctx *gin.Context) {
 // @Failure 		400  {object}  models.Response
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
+// @Security		ApiKeyAuth
 func (h *HandlerV1) ChangePassword(ctx *gin.Context) {
 
 	user, err := getUserInfoFromToken(ctx)
@@ -181,7 +223,7 @@ func (h *HandlerV1) ChangePassword(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := h.services.UsersService().ChangePassword(ctx, &pb.ChangePassword{
+	_, err = h.services.UsersService().ChangePassword(ctx, &pb.ChangePassword{
 		CurrentPassword: req.CurrentPassword,
 		NewPassword:     req.NewPassword,
 		UserId:          user.Id,
@@ -191,5 +233,43 @@ func (h *HandlerV1) ChangePassword(ctx *gin.Context) {
 		return
 	}
 
-	handleResponse(ctx, h.log, "", http.StatusOK, resp)
+	handleResponse(ctx, h.log, "user password was changed successfully", http.StatusOK, "user password was changed successfully")
+}
+
+// ChangeUserRole  	godoc
+// @Router 			/users/user_role/{user_id} [put]
+// @Summary 		Change User Role
+// @Description 	changing user Role
+// @Accept 			json
+// @Produce 		json
+// @Param 			change_user_role body models.ChangeUserRole true "change_user_role"
+// @Success 		200  {object}  models.Response
+// @Failure 		400  {object}  models.Response
+// @Failure 		500  {object}  models.Response
+// @Failure 		401  {object}  models.Response
+// @Security		ApiKeyAuth
+func (h *HandlerV1) ChangeUserRole(ctx *gin.Context) {
+
+	userId := ctx.Param("user_id")
+	if userId == "" {
+		handleResponse(ctx, h.log, "error: id not found in request param", http.StatusBadRequest, logger.Error(fmt.Errorf("id not found in request param")))
+		return
+	}
+
+	request := models.ChangeUserRole{}
+	if err := json.NewDecoder(ctx.Request.Body).Decode(&request); err != nil {
+		handleResponse(ctx, h.log, "error while getting request body", http.StatusBadRequest, err.Error())
+		return
+	}
+
+	_, err := h.services.UsersService().ChangeUserRole(ctx, &pb.ChangeUserRole{
+		Id:          userId,
+		NewUserRole: request.NewUserRole,
+	})
+	if err != nil {
+		handleResponse(ctx, h.log, "error while using ChangeUserRole method of users service", http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	handleResponse(ctx, h.log, "user role was changed successfully", http.StatusOK, "user role was changed successfully")
 }

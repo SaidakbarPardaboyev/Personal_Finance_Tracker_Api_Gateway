@@ -12,7 +12,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func GenarateJWTToken(user *pb.User) (*models.Tokens, error) {
+func GenarateJWTToken(user *pb.UserByEmail) (*models.Tokens, error) {
 	accesToken := jwt.New(jwt.SigningMethodHS256)
 	refreshToken := jwt.New(jwt.SigningMethodHS256)
 
@@ -53,7 +53,7 @@ func GenarateAccessToken(refreshToken string) (
 	*models.Tokens, error) {
 	accesToken := jwt.New(jwt.SigningMethodHS256)
 
-	claims, err := ExtractClaims(refreshToken)
+	claims, err := ExtractClaims(refreshToken, true)
 	if err != nil {
 		return nil, err
 	}
@@ -68,22 +68,25 @@ func GenarateAccessToken(refreshToken string) (
 	}, err
 }
 
-func ValidateToken(tokenStr string) (bool, error) {
-	_, err := ExtractClaims(tokenStr)
+func ValidateToken(tokenStr string, isRefresh bool) (bool, error) {
+	_, err := ExtractClaims(tokenStr, isRefresh)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func ExtractClaims(tokenStr string) (jwt.MapClaims, error) {
+func ExtractClaims(tokenStr string, isRefresh bool) (jwt.MapClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, jwt.MapClaims{}, func(
 		t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v",
 				t.Header["alg"])
 		}
-		return []byte(configs.Load().SigningKeyRefresh), nil
+		if isRefresh {
+			return []byte(configs.Load().SigningKeyRefresh), nil
+		}
+		return []byte(configs.Load().SigningKeyAccess), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)

@@ -16,7 +16,7 @@ import (
 )
 
 // Register 		godoc
-// @Router 			/register [post]
+// @Router 			/auth/register [post]
 // @Summery 		Register User
 // @Description 	this API for register new user
 // @Tags			Auth
@@ -50,7 +50,7 @@ func (h *HandlerV1) Register(ctx *gin.Context) {
 	}
 	req.Password = string(hashedPassword)
 
-	resp, err := h.services.UsersService().Create(ctx, &req)
+	resp, err := h.services.AuthService().Create(ctx, &req)
 	if err != nil {
 		handleResponse(ctx, h.log, "Error with register User", http.StatusInternalServerError, err.Error())
 		return
@@ -59,7 +59,7 @@ func (h *HandlerV1) Register(ctx *gin.Context) {
 }
 
 // Login 			godoc
-// @Router 			/login [post]
+// @Router 			/auth/login [post]
 // @Summery 		Login User
 // @Description 	this API for login new user
 // @Tags			Auth
@@ -79,7 +79,7 @@ func (h *HandlerV1) Login(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.services.UsersService().GetByEmail(ctx, &pb.Email{Email: req.Email})
+	user, err := h.services.AuthService().GetByEmail(ctx, &pb.Email{Email: req.Email})
 	if err != nil {
 		handleResponse(ctx, h.log, "error getting email from database", http.StatusBadRequest, err.Error())
 		return
@@ -97,62 +97,70 @@ func (h *HandlerV1) Login(ctx *gin.Context) {
 		return
 	}
 
-	_, err = h.services.UsersService().DeleteRefreshTokenByUserId(ctx, &pb.PrimaryKey{Id: user.Id})
+	_, err = h.services.AuthService().DeleteRefreshTokenByUserId(ctx, &pb.PrimaryKey{Id: user.Id})
 	if err != nil {
 		handleResponse(ctx, h.log, "Error with deleting userinfo from refreshToken table", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	_, err = h.services.UsersService().StoreRefreshToken(ctx, &pb.RefreshToken{
+	_, err = h.services.AuthService().StoreRefreshToken(ctx, &pb.RefreshToken{
 		UserId:       user.Id,
 		RefreshToken: tokens.RefreshToken,
-		ExpiresIn:    time.Now().Add(time.Hour * 24).String(),
+		ExpiresIn:    time.Now().Add(time.Hour * 24).Format(time.RFC3339),
 	})
 	if err != nil {
 		handleResponse(ctx, h.log, "Error with storing refresh token to refreshToken table", http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	ctx.SetCookie("access_token", tokens.AccessToken, int(time.Hour), "/", "", false, false)
+	ctx.SetCookie("refresh_token", tokens.RefreshToken, int(time.Hour*24), "/", "", false, false)
+
 	ctx.JSON(http.StatusOK, tokens)
 }
 
 // RefreshToken 	godoc
-// @Router 			/refresh-token [post]
+// @Router 			/auth/refresh-token [post]
 // @Summery 		refresh user access token
 // @Description 	this API for refresh user access token
 // @Tags 			Auth
 // @Accept 			json
 // @Produce 		json
-// @Param 			request body models.RequestRefreshToken true "refresh token is required"
 // @Success 		200  {object}  models.Response
 // @Failure 		400  {object}  models.Response
 // @Failure 		500  {object}  models.Response
 // @Failure 		401  {object}  models.Response
 func (h *HandlerV1) RefreshToken(ctx *gin.Context) {
-	req := pb.RequestRefreshToken{}
 
-	err := json.NewDecoder(ctx.Request.Body).Decode(&req)
+	token, err := ctx.Cookie("refresh_token")
 	if err != nil {
-		handleResponse(ctx, h.log, "Error with decoding url body", http.StatusBadRequest, err.Error())
+		handleResponse(ctx, h.log, "error while getting refresh toke from cookie", http.StatusBadRequest, err.Error())
 		return
 	}
+	req := pb.RequestRefreshToken{
+		RefreshToken: token,
+	}
 
-	_, err = h.services.UsersService().CheckRefreshTokenExists(ctx, &req)
+	_, err = h.services.AuthService().CheckRefreshTokenExists(ctx, &req)
 	if err != nil {
 		handleResponse(ctx, h.log, "Invalid refresh token", http.StatusBadRequest, err.Error())
 		return
 	}
 
-	resp, err := jwt.GenarateAccessToken(req.RefreshToken)
+	tokens, err := jwt.GenarateAccessToken(req.RefreshToken)
 	if err != nil {
 		handleResponse(ctx, h.log, "Error with generate access token", http.StatusInternalServerError, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, resp)
+
+	ctx.SetCookie("access_token", tokens.AccessToken, int(time.Hour), "/", "", false, false)
+
+	ctx.JSON(http.StatusOK, tokens)
 }
 
 // ForgotPassword 	godoc
 // @Summery 		Forgot-Password
-// @Router 			/forgot-password [post]
+// @Router 			/auth/forgot-password [post]
 // @Description 	it is used when user forgot password
 // @Tags 			Auth
 // @Accept 			json
@@ -176,7 +184,7 @@ func (h *HandlerV1) ForgotPassword(ctx *gin.Context) {
 	}
 
 	// check email is exists
-	if _, err = h.services.UsersService().CheckEmailExists(ctx, &request); err != nil {
+	if _, err = h.services.AuthService().CheckEmailExists(ctx, &request); err != nil {
 		handleResponse(ctx, h.log, "Error with checking email is exists", http.StatusBadRequest, err.Error())
 		return
 	}
@@ -200,7 +208,7 @@ func (h *HandlerV1) ForgotPassword(ctx *gin.Context) {
 }
 
 // ResetPassword 	godoc
-// @Router 			/reset-password [post]
+// @Router 			/auth/reset-password [post]
 // @Summery 		reset user password
 // @Description 	this API for reset user password
 // @Tags 			Auth
@@ -256,7 +264,7 @@ func (h *HandlerV1) ResetPassword(ctx *gin.Context) {
 	}
 	request.NewPassword = string(hashedPassword)
 
-	if _, err = h.services.UsersService().ResetPassword(ctx, &pb.ResetPassword{
+	if _, err = h.services.AuthService().ResetPassword(ctx, &pb.ResetPassword{
 		NewPassword: request.NewPassword,
 		Email:       email,
 	}); err != nil {

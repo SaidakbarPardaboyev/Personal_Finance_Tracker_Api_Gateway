@@ -43,6 +43,10 @@ type ChangePassword struct {
 	CurrentPassword string `json:"current_password"`
 }
 
+type ChangeUserRole struct {
+	NewUserRole     string `json:"new_user_role"`
+}
+
 // // type ForgotPasswordReq struct {
 // // 	Email string `json:"email"`
 // // }
