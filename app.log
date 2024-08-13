@@ -107,3 +107,4 @@
 {"level":"info","ts":"2024-08-11T20:14:46.161+0500","logger":"api_gateway","caller":"/home/saidakbar/Desktop/Projects/personal_finance_tracker/api_gateway/api/handlers/v1/handler.go:44","msg":"~~~~> OK","msg":"Success","status":200}
 {"level":"info","ts":"2024-08-11T20:18:18.039+0500","logger":"api_gateway","caller":"/home/saidakbar/Desktop/Projects/personal_finance_tracker/api_gateway/api/handlers/v1/handler.go:44","msg":"~~~~> OK","msg":"Success","status":200}
 {"level":"info","ts":"2024-08-11T20:18:38.185+0500","logger":"api_gateway","caller":"/home/saidakbar/Desktop/Projects/personal_finance_tracker/api_gateway/api/handlers/v1/handler.go:44","msg":"~~~~> OK","msg":"","status":200}
+{"level":"info","ts":"2024-08-11T20:54:39.358+0500","logger":"users_service","caller":"/home/saidakbar/Desktop/Projects/personal_finance_tracker/api_gateway/cmd/main.go:45","msg":"Gin router is running.."}

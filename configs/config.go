@@ -15,11 +15,8 @@ type Config struct {
 	UserServiceGrpcHost string
 	UserServiceGrpcPort string
 
-	// LearingServiceGrpcHost string
-	// LearingServiceGrpcPort string
-
-	// ProgresServiceGrpcHost string
-	// ProgresServiceGrpcPort string
+	BudgetingServiceGrpcHost string
+	BudgetingServiceGrpcPort string
 
 	PostgresHost     string
 	PostgresPort     string
@@ -60,16 +57,13 @@ func Load() *Config {
 	config.UserServiceGrpcHost = cast.ToString(coalesce("USER_SERVICE_GRPC_HOST", "localhost"))
 	config.UserServiceGrpcPort = cast.ToString(coalesce("USER_SERVICE_GRPC_PORT", ":1111"))
 
-	// config.LearingServiceGrpcHost = cast.ToString(coalesce("LEARNING_SERVICE_GRPC_HOST", "localhost"))
-	// config.LearingServiceGrpcPort = cast.ToString(coalesce("LEARNING_SERVICE_GRPC_PORT", ":3333"))
-
-	// config.ProgresServiceGrpcHost = cast.ToString(coalesce("PROGRESS_SERVICE_GRPC_HOST", "localhost"))
-	// config.ProgresServiceGrpcPort = cast.ToString(coalesce("PROGRESS_SERVICE_GRPC_PORT", ":4444"))
+	config.BudgetingServiceGrpcHost = cast.ToString(coalesce("BUDGETING_SERVICE_GRPC_HOST", "localhost"))
+	config.BudgetingServiceGrpcPort = cast.ToString(coalesce("BUDGETING_SERVICE_GRPC_PORT", ":3333"))
 
 	config.PostgresHost = cast.ToString(coalesce("POSTGRES_HOST", "localhost"))
 	config.PostgresPort = cast.ToString(coalesce("POSTGRES_PORT", "5432"))
 	config.PostgresUser = cast.ToString(coalesce("POSTGRES_USER", "postgres"))
-	config.PostgresName = cast.ToString(coalesce("POSTGRES_NAME", "language_leap_auth_service"))
+	config.PostgresName = cast.ToString(coalesce("POSTGRES_DBNAME", "language_leap_auth_service"))
 	config.PostgresPassword = cast.ToString(coalesce("POSTGRES_PASSWORD", "root"))
 
 	config.MongoDBHost = cast.ToString(coalesce("MONGODB_HOST", "localhost"))
